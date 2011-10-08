@@ -1,23 +1,38 @@
-gem 'haml-rails'
-gem 'modernizer-rails'
+#gems
+append_file 'Gemfile' do
+  <<-eof
+  gem 'haml-rails'
+  gem 'modernizr-rails'
 
-gem "capistrano", :group => :development
+  group :development do
+    gem "capistrano"
+  end
 
-gem 'sqlite3', :group => [ :development, :test ]
-gem 'pry', :group => [ :development, :test ]
-gem 'rspec-rails', :group => [ :development, :test ]
+  group :development, :test do
+    gem 'sqlite3'
+    gem 'pry'
+    gem 'rspec-rails'
+  end
 
-gem 'mocha', :group => :test
-gem 'capybara', :group => :test
-gem 'factory_girl_rails', :group => :test
-gem 'spork', '> 0.9.0.rc', :group => :test
-gem 'gurad-livereload', :group => :test
-gem 'guard-rspec', :group => :test
-gem 'guard-spork', :group => :test
+  group :test do
+    gem 'mocha'
+    gem 'capybara'
+    gem 'factory_girl_rails'
+    gem 'spork', '> 0.9.0.rc'
+    gem 'guard-livereload'
+    gem 'guard-rspec'
+    gem 'guard-spork'
+  end
+  eof
+end
 
-gem 'therubyracer',:group => :assets
-gem 'compass', '> 0.12.alpha', :require => false, :group => :assets
-gem 'compass-susy-plugin', '> 0.9', :require => 'susy', :group => :assets
+inject_into_file 'Gemfile', :after => 'group :assets do' do
+  <<-eof
+    gem 'therubyracer'
+    gem 'compass', "~> 0.12.alpha", :require => false
+    gem 'compass-susy-plugin', :require => 'susy'
+  eof
+end
 
 run 'bundle install'
 
