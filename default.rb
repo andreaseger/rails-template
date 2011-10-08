@@ -126,7 +126,7 @@ git :add => "."
 git :commit => "-aqm 'default generators'"
 
 
-remove "README"
+remove_file "README"
 download "https://raw.github.com/sch1zo/rails-template/master/files/readme.md.erb", "readme.md.erb"
 template "readme.md.erb", "readme.md"
 remove_file "readme.md.erb"
@@ -136,6 +136,7 @@ git :commit => "-aqm 'readme'"
 
 
 initializer("app_config.rb") do
+  <<-eof
   #load yml file
   unless File.exists? Rails.root.join('config','app_config.yml')
     require 'fileutils'
@@ -145,6 +146,7 @@ initializer("app_config.rb") do
 
   require 'ostruct'
   APP_CONFIG = OpenStruct.new(YAML.load_file(Rails.root.join('config','app_config.yml') )[::Rails.env] )
+  eof
 end
 download "https://raw.github.com/sch1zo/rails-template/master/files/app_config.example", "config/app_config.yml"
 
