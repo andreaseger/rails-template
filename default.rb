@@ -1,3 +1,20 @@
+require "net/http"
+require "net/https"
+
+def download(source, destination)
+  uri = URI.parse(source)
+  http = Net::HTTP.new(uri.host, uri.port)
+  http.use_ssl = true if source =~ /^https/
+  request = Net::HTTP::Get.new(uri.path)
+  contents = http.request(request).body
+  path = File.join(destination_root, destination)
+  File.open(path, "w") { |file| file.write(contents) }
+end
+
+
+git :add => "."
+git :commit => "-aqm 'create initial application'"
+
 #gems
 append_file 'Gemfile' do
   <<-eof
@@ -36,41 +53,52 @@ end
 
 run 'bundle install'
 
-#replace layout
-remove_file 'app/views/layouts/application.html.erb'
-get "https://raw.github.com/sch1zo/rails-template/master/files/application.html.haml", "app/views/layouts/application.html.haml"
+git :add => "."
+git :commit => "-aqm 'custom gems'"
 
-#assets
-#normalizer stylesheet
-get "https://raw.github.com/jonathantneal/normalize.css/master/normalize.css" "normalize.css"
+say 'replace layout'
+remove_file 'app/views/layouts/application.html.erb'
+download 'https://github.com/sch1zo/rails-template/raw/master/files/application.html.haml', "app/views/layouts/application.html.haml"
+
+say 'assets'
+say 'normalizer stylesheet'
+download "https://raw.github.com/jonathantneal/normalize.css/master/normalize.css", "normalize.css"
 run "bundle exec sass-convert -F css -T sass normalize.css vendor/assets/stylesheets/normalize.css.sass"
 remove_file "normalize.css"
 
-#susy setup
-get "https://raw.github.com/sch1zo/rails-template/master/files/base.css.sass", "app/assets/stylesheets/base.css.sass"
-get "https://raw.github.com/sch1zo/rails-template/master/files/defaults.css.sass", "app/assets/stylesheets/defaults.css.sass"
-get "https://raw.github.com/sch1zo/rails-template/master/files/common.css.sass", "app/assets/stylesheets/common.css.sass"
+say 'susy setup'
+download "https://raw.github.com/sch1zo/rails-template/master/files/base.css.sass", "app/assets/stylesheets/base.css.sass"
+download "https://raw.github.com/sch1zo/rails-template/master/files/defaults.css.sass", "app/assets/stylesheets/defaults.css.sass"
+download "https://raw.github.com/sch1zo/rails-template/master/files/common.css.sass", "app/assets/stylesheets/common.css.sass"
 remove_file "app/assets/stylesheets/application.css"
-get "https://raw.github.com/sch1zo/rails-template/master/files/application.css.sass", "app/assets/stylesheets/application.css.sass"
+download "https://raw.github.com/sch1zo/rails-template/master/files/application.css.sass", "app/assets/stylesheets/application.css.sass"
 
+git :add => "."
+git :commit => "-aqm 'layout and assets'"
 
-# clean up rails defaults
-remove_file 'rm public/images/rails.png'
+say 'clean up rails defaults'
+remove_file 'public/images/rails.png'
 remove_file 'public/index.html'
 copy_file 'config/database.yml', 'config/database.example'
 append_to_file '.gitignore', 'config/database.yml'
 
-# capistrano
+git :add => "."
+git :commit => "-aqm 'cleanup defaults'"
+
+say 'capistrano'
 capify!
-get "https://raw.github.com/sch1zo/rails-template/master/files/deploy.rb.erb", "tmp/deploy.rb.erb"
+download "https://raw.github.com/sch1zo/rails-template/master/files/deploy.rb.erb", "tmp/deploy.rb.erb"
 template "tmp/deploy.rb.erb", 'config/deploy.rb'
 remove_file "tmp/deploy.rb.erb"
-copy_file 'config/deploy.rb', 'config/deploy.rb.example'
+copy_file 'config/deploy.rb', 'config/deploy.example'
 append_to_file '.gitignore', 'config/deploy.rb'
 
-#setup rspec/guard/spork
+git :add => "."
+git :commit => "-aqm 'capistrano'"
+
+say 'setup rspec/guard/spork'
 rake "rspec:install"
-get "https://raw.github.com/sch1zo/rails-template/master/files/Guardfile", 'Guardfile'
+download "https://raw.github.com/sch1zo/rails-template/master/files/Guardfile", 'Guardfile'
 run "bundle exec spork --bootstrap"
 
 create_file '.rspec', '--colour --format d --drb'
@@ -85,6 +113,10 @@ end
 inject_into_file 'spec/spec_helper.rb', "\nrequire 'capybara/rspec'", :after => "require 'rspec/rails'"
 inject_into_file 'spec/spec_helper.rb', "\nFactoryGirl.reload", :after => "# This code will be run each time you run your specs."
 
+git :add => "."
+git :commit => "-aqm 'rspec/guard/spork'"
+
+say 'setup default generators'
 inject_into_file 'config/application.rb', :after => "config.filter_parameters += [:password]" do
   <<-eos
     # Do not generate test files
@@ -96,7 +128,5 @@ inject_into_file 'config/application.rb', :after => "config.filter_parameters +=
   eos
 end
 
-#git
-git :init
 git :add => "."
-git :commit => "-a -m 'create initial application'"
+git :commit => "-aqm 'default generators'"
