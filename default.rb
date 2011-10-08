@@ -79,7 +79,7 @@ git :commit => "-aqm 'layout and assets'"
 say 'clean up rails defaults'
 remove_file 'public/images/rails.png'
 remove_file 'public/index.html'
-copy_file 'config/database.yml', 'config/database.example'
+run 'cp config/database.yml config/database.example'
 append_to_file '.gitignore', 'config/database.yml'
 
 git :add => "."
@@ -88,9 +88,9 @@ git :commit => "-aqm 'cleanup defaults'"
 say 'capistrano'
 capify!
 download "https://raw.github.com/sch1zo/rails-template/master/files/deploy.rb.erb", "tmp/deploy.rb.erb"
-template "tmp/deploy.rb.erb", 'config/deploy.rb'
+template "./tmp/deploy.rb.erb", 'config/deploy.rb'
 remove_file "tmp/deploy.rb.erb"
-copy_file 'config/deploy.rb', 'config/deploy.example'
+run 'cp config/deploy.rb config/deploy.example'
 append_to_file '.gitignore', 'config/deploy.rb'
 
 git :add => "."
