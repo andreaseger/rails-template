@@ -140,17 +140,36 @@ initializer("app_config.rb") do
   #load yml file
   unless File.exists? Rails.root.join('config','app_config.yml')
     require 'fileutils'
-    Fileutils.cp Rails.root.join('config','app_config.example'), Rails.root.join('config','app_config.yml')
-    puts "app_config.yml created"
+    FileUtils.cp Rails.root.join('config','app_config.example'), Rails.root.join('config','app_config.yml')
+    puts "[INFO] app_config.yml created"
   end
 
   require 'ostruct'
   APP_CONFIG = OpenStruct.new(YAML.load_file(Rails.root.join('config','app_config.yml') )[::Rails.env] )
   eof
 end
-download "https://raw.github.com/sch1zo/rails-template/master/files/app_config.example", "config/app_config.yml"
+download "https://raw.github.com/sch1zo/rails-template/master/files/app_config.example", "config/app_config.example"
 
 git :add => "."
 git :commit => "-aqm 'app_config initializer and example file'"
+
+create_file ".travis.yml" do
+  <<-eof
+  rvm:
+    - ree
+    - 1.9.2
+    - 1.9.3
+  before_script:
+    - "mv config/database.example config/database.yml"
+    - "bundle exec rake db:migrate"
+  notifications:
+    email:
+      - dev@eger.lc
+  eof
+end
+append_to_file "Rakefile", "\n\nRake::Task[:default].prerequisites.clear\ntask :default => :spec"
+
+git :add => "."
+git :commit => "-aqm 'initial travis setup'"
 
 rake "db:create"
