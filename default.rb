@@ -1,5 +1,4 @@
 gem 'haml-rails'
-gem 'jquery-rails'
 gem 'modernizer-rails'
 
 gem "capistrano", :group => :development
@@ -17,80 +16,49 @@ gem 'guard-rspec', :group => :test
 gem 'guard-spork', :group => :test
 
 gem 'therubyracer',:group => :assets
-gem 'compass', '~> 0.12.alpha', :group => :assets
+gem 'compass', '> 0.12.alpha', :require => false, :group => :assets
+gem 'compass-susy-plugin', '> 0.9', :require => 'susy', :group => :assets
 
 run 'bundle install'
 
-rake "rspec:install"
-run "bundle exec spork --bootstrap"
-
-run "bundle exec guard init"
-run "bundle exec guard init rspec"
-run "bundle exec guard init livereload"
-run "bundle exec guard init spork"
-
-run "echo '--colour --format d --drb' >> .rspec"
-
+#replace layout
 remove_file 'app/views/layouts/application.html.erb'
-create_file 'app/views/layouts/application.html.haml' do
-  <<-eof
-<!doctype html>
-<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
-<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]-->
-<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en"> <![endif]-->
-<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en"> <![endif]-->
-<!-- Consider adding a manifest.appcache: h5bp.com/d/Offline -->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
-%head
-  %meta{:charset => "utf-8"}
-  /
-    Use the .htaccess and remove these lines to avoid edge case issues.
-    More info: h5bp.com/b/378
-  %meta{:content => "IE=edge,chrome=1", "http-equiv" => "X-UA-Compatible"}
-  %title
-  %meta{:content => "", :name => "description"}
-  %meta{:content => "", :name => "author"}
-  / Mobile viewport optimized: j.mp/bplateviewport
-  %meta{:content => "width=device-width,initial-scale=1", :name => "viewport"}
+get "https://raw.github.com/sch1zo/rails-template/master/files/application.html.haml", "app/views/layouts/application.html.haml"
 
-  = stylesheet_link_tag "application"
-  = yield :stylesheet
-  = javascript_include_tag "modernizr"
-  = csrf_meta_tags
-%body
-  .container
-    #nav
-      %nav
-        %li
-          site
-    -if notice
-      %p#notice= notice
-    %div{:role => "main", :id => "main"}
-      = yield
-    %footer#footer
-  = javascript_include_tag "application"
-  = yield :javascript
+#assets
+#normalizer stylesheet
+get "https://raw.github.com/jonathantneal/normalize.css/master/normalize.css" "normalize.css"
+run "bundle exec sass-convert -F css -T sass normalize.css vendor/assets/stylesheets/normalize.css.sass"
+remove_file "normalize.css"
 
-<!-- Prompt IE 6 users to install Chrome Frame. Remove this if you want to support IE 6. chromium.org/developers/how-tos/chrome-frame-getting-started -->
-<!--[if lt IE 7 ]>
-<script defer src="//ajax.googleapis.com/ajax/libs/chrome-frame/1.0.3/CFInstall.min.js"></script>
-<script defer>window.attachEvent('onload',function(){CFInstall.check({mode:'overlay'})})</script>
-<![endif]-->
-  eof
-end
+#susy setup
+get "https://raw.github.com/sch1zo/rails-template/master/files/base.css.sass", "app/assets/stylesheets/base.css.sass"
+get "https://raw.github.com/sch1zo/rails-template/master/files/defaults.css.sass", "app/assets/stylesheets/defaults.css.sass"
+get "https://raw.github.com/sch1zo/rails-template/master/files/common.css.sass", "app/assets/stylesheets/common.css.sass"
+remove_file "app/assets/stylesheets/application.css"
+get "https://raw.github.com/sch1zo/rails-template/master/files/application.css.sass", "app/assets/stylesheets/application.css.sass"
 
 
 # clean up rails defaults
 remove_file 'rm public/images/rails.png'
 remove_file 'public/index.html'
-run 'cp config/database.yml config/database.example'
-run "echo 'config/database.yml' >> .gitignore"
-run "echo '.sass-cache/' >> .gitignore"
+copy_file 'config/database.yml', 'config/database.example'
+append_to_file '.gitignore', 'config/database.yml'
 
+# capistrano
 capify!
-run 'cp config/deploy.rb config/deploy.example'
-run "echo 'config/deploy.rb' >> .gitignore"
+get "https://raw.github.com/sch1zo/rails-template/master/files/deploy.rb.erb", "tmp/deploy.rb.erb"
+template "tmp/deploy.rb.erb", 'config/deploy.rb'
+remove_file "tmp/deploy.rb.erb"
+copy_file 'config/deploy.rb', 'config/deploy.rb.example'
+append_to_file '.gitignore', 'config/deploy.rb'
 
+#setup rspec/guard/spork
+rake "rspec:install"
+get "https://raw.github.com/sch1zo/rails-template/master/files/Guardfile", 'Guardfile'
+run "bundle exec spork --bootstrap"
+
+create_file '.rspec', '--colour --format d --drb'
 inject_into_file 'spec/spec_helper.rb', :after => "RSpec.configure do |config|" do
   <<-eof
     config.mock_with :mocha
@@ -102,7 +70,18 @@ end
 inject_into_file 'spec/spec_helper.rb', "\nrequire 'capybara/rspec'", :after => "require 'rspec/rails'"
 inject_into_file 'spec/spec_helper.rb', "\nFactoryGirl.reload", :after => "# This code will be run each time you run your specs."
 
+inject_into_file 'config/application.rb', :after => "config.filter_parameters += [:password]" do
+  <<-eos
+    # Do not generate test files
+    config.generators do |g| 
+      g.test_framework :rspec, :fixture = true, :views => false
+      g.integration_tool false
+      g.fixture_replacement :factory_girl, :dir => "spec/factories"
+    end
+  eos
+end
 
+#git
 git :init
 git :add => "."
 git :commit => "-a -m 'create initial application'"
