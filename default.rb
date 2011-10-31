@@ -60,7 +60,7 @@ source_paths << "."
 
 say 'replace layout'
 remove_file 'app/views/layouts/application.html.erb'
-download 'https://github.com/sch1zo/rails-template/raw/master/files/application.html.haml', "app/views/layouts/application.html.haml"
+download 'https://raw.github.com/sch1zo/rails-template/master/files/application.html.haml', "app/views/layouts/application.html.haml"
 
 say 'assets'
 say 'normalizer stylesheet'
